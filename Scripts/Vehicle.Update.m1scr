@@ -1,0 +1,14 @@
+/*******************************************************************
+*  Vehicle.Update
+* 
+* Generates the data for the car. Useful for displaying on dash.
+* 
+*******************************************************************/
+
+
+Data.Speed = Calculate.Average(Inverter.LHS.Data.GroundSpeed, -Inverter.RHS.Data.GroundSpeed);
+Data.TempIGBT = Calculate.Max(Inverter.LHS.Data.TempIGBT, Inverter.RHS.Data.TempIGBT);
+Data.TempMotor = Calculate.Max(Inverter.LHS.Data.TempMotor, Inverter.RHS.Data.TempMotor);
+Data.TempAccumulator = BMS.Data.HighTemperature; 
+Data.Power = 1.0*BMS.PackCurrent*BMS.Data.PackVoltage;   // Units are kW
+Parameters.MaxTorqueLimit = Parameters.MaxTorqueCmd*Inverter.LHS.TorqueCmd.IMaxPk*Inverter.LHS.TorqueCmd.TorquePerMotorCurrent/(32767*Calculate.FastSquareRoot(2.0));

@@ -1,0 +1,25 @@
+/*******************************************************************
+*  CAN.Transmit
+*
+*
+*******************************************************************/
+
+if (CAN.Transmit(0x99, BMS.Data.HighTemperature) and
+	CAN.Transmit(0x98, BMS.Data.PackVoltage) and
+	CAN.Transmit(0x97, BMS.Data.SoC) and
+	CAN.Transmit(0x96, Vehicle.Data.Speed) and
+	CAN.Transmit(0x95, Vehicle.Data.TempIGBT) and
+	CAN.Transmit(0x94, BMS.PackCurrent*BMS.Data.PackVoltage) and
+	CAN.Transmit(0x93, Vehicle.Data.TempMotor) and
+	CAN.Transmit(0x92, 10*Vehicle.LV Battery.Voltage) and
+	CAN.Transmit(0x91, Vehicle.LV SoC) and 
+	CAN.Transmit(0x90, Brightness) and
+	CAN.Transmit(0x89, BMS.Data.PackDCL) and
+	CAN.Transmit(0x9A, Initialisation.ReadyToDrive.statemap) and
+	CAN.Transmit(0x9D, 100*AcceleratorPedal.MappedThrottleA) and
+	CAN.Transmit(0x9E, 100*AcceleratorPedal.MappedThrottleB))
+{
+	CAN.TxStatus = TxStatus.Ok;
+} else {
+	CAN.TxStatus = TxStatus.Faulty;
+}

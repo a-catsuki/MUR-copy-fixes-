@@ -1,0 +1,5 @@
+//UNUSED
+
+local bitOffset = 56 - BitLength;
+Raw = CanComms.GetInteger(In.receiveHandle, bitOffset, BitLength); 
+Actual = 1.0*Raw/8355;

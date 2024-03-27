@@ -1,0 +1,12 @@
+if (Initialisation.ReadyToDrive eq ReadyToDrive.Ready){
+	RHS.SetState(true);
+	LHS.SetState(true);
+	}
+else if (Test High Cooling eq 1){
+	RHS.SetState(true);
+	LHS.SetState(true);
+	}
+else {
+	RHS.SetState(false);
+	LHS.SetState(false);
+}

@@ -1,0 +1,68 @@
+/*******************************************************************
+*  Vehicle.Throttle
+* 
+* 
+*  Outer loop control of vehicle throttle and power limits
+*  TODO: Add different powerlimit tunes for various events, currently only works by manually setting power limit on Tune.
+*******************************************************************/
+
+// Outer loop mapping of throttle; Depends on: Maximum Power Limit
+local Scale = 0.0;
+
+// Calculate total power limit of accumulator based on BMS DCL and Pack Voltage
+Data.DCLPowerLimit = BMS.Data.PackDCL * BMS.Data.PackVoltage;
+
+// TODO: REMOVE. Reduce command for endurance based on SoC and Accumulator Temp for Enduro
+if (InEndurance eq Bool.True) {
+	Scale = EfficiencyMap * DCL Map; // Not needed for 2021 updated code.
+	Scale = Calculate.Max(Scale, Parameters.MinScale);  // Don't want car to stop if scale is low
+}
+else {
+Scale = 1.0;
+}
+
+
+/* Stop the torque command if power is ever registered to be getting close to 80kW
+if (Data.Power > Parameters.PowerMax) {
+	Scale = 0;
+	Data.PowerLimiting = Bool.True;
+} else if (Data.Power > Parameters.PowerHysteresis and Data.PowerLimiting eq Bool.True) {
+	Scale = 0;
+} else { 
+	Data.PowerLimiting = Bool.False;
+}*/
+
+// Set torque command to scale of Accelerator Pedal travel.
+Scale *= AcceleratorPedal;
+
+// Open Loop Torque Vectoring TODO: Not a truly linear scaling, can improve with actual map.
+if (TorqueVectoring.Enable eq Enabled.True) {
+	// OLTV scaled based on steering angle
+	TorqueVectoring.Value = Calculate.Absolute(TorqueVectoring.K * Steering);	
+	if (Steering.Direction eq Directions.Left) {
+		Inverter.LHS.Command(Calculate.Max(0.0, Scale*(Parameters.MaxTorqueCmd - TorqueVectoring.Value))); // Scale torque command based on pedal and OLTV
+		Inverter.RHS.Command(Scale*Parameters.MaxTorqueCmd);  // Can't increase the torque command, see rules
+	} else if (Steering.Direction eq Directions.Right) {
+		Inverter.LHS.Command(Scale*Parameters.MaxTorqueCmd);  // Can't increase the torque command, see rules
+		Inverter.RHS.Command(Calculate.Max(0.0, Scale*(Parameters.MaxTorqueCmd - TorqueVectoring.Value)));
+	} else {
+		Inverter.LHS.Command(Scale*Parameters.MaxTorqueCmd);
+		Inverter.RHS.Command(Scale*Parameters.MaxTorqueCmd);
+	}
+} else if (Parameters.TestSignal eq 1){
+	//testing
+	Inverter.RHS.Command(0.5*Parameters.MaxTorqueCmd);
+	Parameters.xx = 2;
+} else if (Parameters.TestSignal eq 0) {
+	//testing
+	Inverter.RHS.Command(0*Parameters.MaxTorqueCmd);
+	Parameters.xx = 0;
+} else if (Data.Power > Parameters.PowerMax){
+	Inverter.LHS.Command(Parameters.MaxTorqueCmd);
+	Data.PowerLimiting = Bool.True; 
+} else if (Data.Power > Parameters.PowerHysteresis and Data.PowerLimiting eq Bool.True) {
+    Inverter.LHS.Command(Parameters.MaxTorqueCmd);
+} else {
+	Inverter.LHS.Command(Scale*Parameters.MaxTorqueCmd);
+	Inverter.RHS.Command(Scale*Parameters.MaxTorqueCmd);
+}

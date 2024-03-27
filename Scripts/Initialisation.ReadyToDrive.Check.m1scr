@@ -1,0 +1,81 @@
+/*******************************************************************
+*  ReadyToDrive.Check
+*
+* Scheduled function to control the ReadyToDrive state machine. The 
+* states of the machine are:
+* 1. Not ready
+* 2. Initialising  (single pass)
+* 3. Ready
+* 4. Shutdown  (single pass)
+* 
+* The car enters each of these states sequentially, and returns to 
+* Not ready in the event of shutdown.
+*
+*******************************************************************/
+
+
+when (State) { //  uses "when" instead of "switch"
+	
+	is (NotReady) { // Waiting for the car to be safe
+	statemap = 0;
+	SafetyFault.MOTEC Out.SetState(true); 	
+		if (SafetyFault eq Safety Fault.Safe 
+				and Interlocks eq Interlocks.On		
+				and BrakePedal.Mapping.BrakePressed eq 1 
+				and Button eq Button.On) { 
+			State = ReadyToDrive.Initialising;
+			BuzzerTimer.Start(1.0);
+			Buzzer.SetState(true);
+		}
+		
+		// There is a chance that the buzzer could still be making noise
+		else if (BuzzerTimer.Remaining() <= 0.0) { 
+			Buzzer.SetState(false);
+		}
+		 
+	}
+	
+	is (Initialising) { // give safety signal to BSPD
+		statemap = 1;
+		State = ReadyToDrive.Ready;
+		
+	}
+	
+	is (Ready) { // Car is ready to drive
+		statemap = 2;
+		if (BuzzerTimer.Remaining() <= 0.0) {
+			Buzzer.SetState(false);
+		}
+		
+		// Check if there is a fault, shutdown the car if so
+		if (Interlocks eq Interlocks.Off or SafetyFault eq Safety Fault.Fault) {
+			State = ReadyToDrive.Shutdown;
+		}
+		
+		// Disable the motors if pedal position is implausible
+		else if (AcceleratorPedal.Plausibility eq PedalPlausibility.Implausible) {
+			State = ReadyToDrive.Implausibility;
+		}
+	}
+	
+	is (Implausibility) {  //shutdown the car TODO:use CAN to disable inverter only
+		statemap = 3;
+		SafetyFault.MOTEC Out.SetState(false); 
+		if (AcceleratorPedal.Plausibility eq PedalPlausibility.Ok) {
+			State = ReadyToDrive.Initialising;
+		}
+		
+		// There is a chance that the buzzer could still be making noise
+		else if (BuzzerTimer.Remaining() <= 0.0) { 
+			Buzzer.SetState(false);
+		}
+	
+	}
+	
+	is (Shutdown) {  // Single pass to disable everything in case of fault
+		statemap = 4;
+		SafetyFault.MOTEC Out.SetState(false); 
+		State = ReadyToDrive.NotReady;
+	}
+}
+

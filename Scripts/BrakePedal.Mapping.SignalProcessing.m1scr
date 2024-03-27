@@ -1,0 +1,47 @@
+//INPUT: Raw Break Pressure Analogue Input Voltage Signal
+//OUTPUT: Break Pressure
+//Brake pressure sensor raw signal processing
+//Hardware in 2023, no software control
+
+/*local FrontPercentagetmp = (BrakePedal.FrontBrakePressure - BrakePedal.Mapping.FrontReleased) / (BrakePedal.Mapping.FrontPressed - BrakePedal.Mapping.FrontReleased);
+local RearPercentagetmp = (BrakePedal.RearBrakePressure - BrakePedal.Mapping.RearReleased) / (BrakePedal.Mapping.RearPressed - BrakePedal.Mapping.RearReleased);
+
+if( (FrontPercentagetmp > 0.03) and (FrontPercentagetmp<1.01)){
+	FrontPercentage = FrontPercentagetmp;
+}else{
+	FrontPercentage = 0;
+}
+
+if( (RearPercentagetmp > 0.03) and (RearPercentagetmp<1.01)){
+	RearPercentage = RearPercentagetmp;
+}else{
+	RearPercentage = 0;
+}
+
+MappedBrakePressure = (FrontPercentage + RearPercentage) / 2;
+
+//----------Plausibility Check-------------
+if ((BrakePedal.FrontBrakePressure.Absolute>FrontReleased) and 
+	(BrakePedal.FrontBrakePressure.Absolute<FrontPressed) and 
+	(BrakePedal.RearBrakePressure.Absolute>RearReleased) and 
+	(BrakePedal.RearBrakePressure.Absolute<rearPressed)){
+	Plausibility = Pedal Plausibility.Ok;
+}else{ // TODO: Implausibility allows 100msec before disabling, need to check this
+	Plausibility = Pedal Plausibility.Implausible;
+}*/
+
+//-----------Brake Pressed & Brake Light----------------
+if (BrakePedal.FrontBrakePressure > BrakePressedThreshold or
+	BrakePedal.RearBrakePressure > BrakePressedThreshold) {
+
+	BrakePressed = 1;
+	BrakePedal.BrakeLight.SetState(true);
+	
+} else {
+
+	BrakePressed = 0;
+	BrakePedal.BrakeLight.SetState(false);
+	
+}
+	
+	

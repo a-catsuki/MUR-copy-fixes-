@@ -1,0 +1,17 @@
+/*******************************************************************
+*  CAN.TransmitNew for the E23 Inverter
+*
+*
+*******************************************************************/
+
+local CanHandle = CanComms.TxOpen(false);
+CanComms.TxInitialise(CanHandle, 8);
+CanComms.SetUnsignedInteger(CanHandle, 40, 1, Convert.ToUnsignedInteger(1)); //enable inverter
+CanComms.SetUnsignedInteger(CanHandle, 32, 1, Convert.ToUnsignedInteger(1)); //0=CW 1=CCW
+CanComms.SetInteger(CanHandle, 0, 16, In.Command);//torque cmd
+CanComms.SetInteger(CanHandle, 48, 16, In.MaxTorque); //troque limit
+if (CanComms.TxStandard(CanHandle, Bus, In.Register)) {
+	Out = TxStatus.Ok;
+} else {
+	Out = TxStatus.Faulty;
+}

@@ -1,0 +1,45 @@
+/*******************************************************************
+*  Command
+*
+* Sends a torque command to the inverter. 
+*
+*******************************************************************/
+
+if (Testing eq Enabled.False and Initialisation.ReadyToDrive eq ReadyToDrive.Ready) {
+	
+	// Convert torque to a register value (See BAMOCAR FAQ)
+	// TODO Fix IMaxPk to read an actual value
+	TorqueCmd.IDesRMS = In.TorqueCmd / TorqueCmd.TorquePerMotorCurrent;
+	//TorqueCmd = Convert.ToUnsignedInteger(TorqueCmd.MaxValueRegister*TorqueCmd.IDesRMS/Data.IMaxPk.Raw);
+	
+	// In case of power over set limit, derate torque delivered based on percentage.
+	PowerLim.SetPowerLimit = Calculate.Min(PowerLim.PowerLimit,Vehicle.Data.DCLPowerLimit)/2;	
+	
+	if (Vehicle.Data.Power > PowerLim.SetPowerLimit*2) {
+	PowerLim.TorqueLimit = (PowerLim.SetPowerLimit * 9.5488 / (Calculate.Absolute(Data.RPM) / 6))/Vehicle.Parameters.MaxTorqueLimit;
+	}
+	else {
+	PowerLim.TorqueLimit = 1;
+	}
+	
+	// Reduce Torque Command at higher speeds to conserve power (don't do for accel)
+	TorqueCmd = PowerLimit*In.TorqueCmd; // SWITCH TO PowerLim.TorqueLimit for 2021
+	
+	// DATA: Reference Torque Generated
+	TorqueCmd.TorqueRef = TorqueCmd*TorqueCmd.IMaxPk*TorqueCmd.TorquePerMotorCurrent/(32767*Calculate.FastSquareRoot(2.0));
+
+	// Send torque as a current command (0xFFFF as this motor needs to spin in reverse)
+	TorqueCmd.TxStatus = CAN.TransmitNew(0xC0, Convert.ToInteger(TorqueCmd),Convert.ToInteger(Vehicle.Parameters.MaxTorqueCmd));
+
+} else {
+	TorqueCmd.TxStatus = CAN.TransmitNew(0xC0, 0, 0);
+}
+
+
+/*if (Testing eq Enabled.False and Initialisation.ReadyToDrive eq ReadyToDrive.Ready) {
+	TorqueCmd = In.TorqueCmd;
+	TorqueCmd.TxStatus = CAN.TransmitNew(0xC0, Convert.ToInteger(TorqueCmd),Convert.ToInteger(Vehicle.Parameters.MaxTorqueCmd));
+}
+else {
+	TorqueCmd.TxStatus = CAN.TransmitNew(0xC0, 0, 0);
+}
